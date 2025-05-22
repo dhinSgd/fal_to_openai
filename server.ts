@@ -1,6 +1,6 @@
 // server.ts
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { FalClient } from "npm:@fal-ai/client";
+import express from 'express';
+import { fal } from '@fal-ai/client';
 
 // 初始化 FAL 客户端
 const fal = new FalClient({
