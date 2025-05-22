@@ -21,7 +21,7 @@ jobs:
       - name: Install Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v1.x
+          deno-version: v2.x
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -31,11 +31,14 @@ jobs:
       - name: Install step
         run: "npm install"
 
+      - name: Build step
+        run: "npm install"
+
       - name: Upload to Deno Deploy
         uses: denoland/deployctl@v1
         with:
-          project: "sigurdsteig-fal-to-open-29"
-          entrypoint: ""
-          root: ""
-          
+          project: "sigurdsteig-fal-to-open-69"
+          entrypoint: "server.ts"
+          root: "/"
+          include: package.json,deno.js
           
