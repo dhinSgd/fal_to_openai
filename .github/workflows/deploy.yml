@@ -40,5 +40,5 @@ jobs:
           project: "sigurdsteig-fal-to-open-69"
           entrypoint: "server.ts"
           root: "/"
-          include: package.json,deno.js
+          
           
