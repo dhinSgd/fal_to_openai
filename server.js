@@ -1,10 +1,17 @@
 import express from 'express';
 import { fal } from '@fal-ai/client';
 
-// 从环境变量读取 Fal AI API Key
+// 从环境变量读取 Fal AI API Key 和自定义 API Key
 const FAL_KEY = process.env.FAL_KEY;
+const API_KEY = process.env.API_KEY; // 添加自定义 API Key 环境变量
+
 if (!FAL_KEY) {
     console.error("Error: FAL_KEY environment variable is not set.");
+    process.exit(1);
+}
+
+if (!API_KEY) {
+    console.error("Error: API_KEY environment variable is not set.");
     process.exit(1);
 }
 
@@ -18,6 +25,33 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 const PORT = process.env.PORT || 3000;
+
+// API Key 鉴权中间件
+const apiKeyAuth = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    
+    if (!authHeader) {
+        console.warn('Unauthorized: No Authorization header provided');
+        return res.status(401).json({ error: 'Unauthorized: No API Key provided' });
+    }
+    
+    const authParts = authHeader.split(' ');
+    if (authParts.length !== 2 || authParts[0].toLowerCase() !== 'bearer') {
+        console.warn('Unauthorized: Invalid Authorization header format');
+        return res.status(401).json({ error: 'Unauthorized: Invalid Authorization header format' });
+    }
+    
+    const providedKey = authParts[1];
+    if (providedKey !== API_KEY) {
+        console.warn('Unauthorized: Invalid API Key');
+        return res.status(401).json({ error: 'Unauthorized: Invalid API Key' });
+    }
+    
+    next();
+};
+
+// 应用 API Key 鉴权中间件到所有 API 路由
+app.use(['/v1/models', '/v1/chat/completions'], apiKeyAuth);
 
 // === 全局定义限制 ===
 const PROMPT_LIMIT = 4800;
@@ -67,7 +101,6 @@ app.get('/v1/models', (req, res) => {
         res.status(500).json({ error: "Failed to retrieve model list." });
     }
 });
-
 
 // === 修改后的 convertMessagesToFalPrompt 函数 (System置顶 + 分隔符 + 对话历史Recency) ===
 function convertMessagesToFalPrompt(messages) {
@@ -332,10 +365,11 @@ app.post('/v1/chat/completions', async (req, res) => {
 // 启动服务器 (更新启动信息)
 app.listen(PORT, () => {
     console.log(`===================================================`);
-    console.log(` Fal OpenAI Proxy Server (System Top + Separator + Recency)`); // 更新策略名称
+    console.log(` Fal OpenAI Proxy Server (System Top + Separator + Recency)`);
     console.log(` Listening on port: ${PORT}`);
     console.log(` Using Limits: System Prompt=${SYSTEM_PROMPT_LIMIT}, Prompt=${PROMPT_LIMIT}`);
     console.log(` Fal AI Key Loaded: ${FAL_KEY ? 'Yes' : 'No'}`);
+    console.log(` API Key Auth Enabled: ${API_KEY ? 'Yes' : 'No'}`);
     console.log(` Chat Completions Endpoint: POST http://localhost:${PORT}/v1/chat/completions`);
     console.log(` Models Endpoint: GET http://localhost:${PORT}/v1/models`);
     console.log(`===================================================`);
